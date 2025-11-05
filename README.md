@@ -19,9 +19,11 @@ A modern, feature-rich file tree visualization tool written in Rust, similar to 
 ### Building from Source
 
 ```bash
-# Clone the repository (replace with your actual repo URL)
-# git clone https://github.com/your-username/tree2.git
-# cd tree2
+# Clone the repository
+git clone https://github.com/pzzzyda/tree2.git
+
+# Navigate to the project directory
+cd tree2
 
 # Alternatively, if you're already in the project directory
 cargo build --release
