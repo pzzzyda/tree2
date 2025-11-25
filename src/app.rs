@@ -28,6 +28,9 @@ pub struct TreeArgs {
 
     #[arg(long, default_value_t = false)]
     sort: bool,
+
+    #[arg(long, default_value_t = false)]
+    show_gitignore: bool,
 }
 
 pub fn run_tree_command(args: &TreeArgs) -> Result<(), TreeError> {
@@ -40,6 +43,7 @@ pub fn run_tree_command(args: &TreeArgs) -> Result<(), TreeError> {
         with_color: !args.no_color,
         ascii_only: args.ascii,
         sort: args.sort,
+        ignore_gitignore: !args.show_gitignore,
     };
 
     print_tree_with_config(path, &config)

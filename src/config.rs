@@ -5,6 +5,7 @@ pub struct TreeConfig {
     pub with_color: bool,
     pub ascii_only: bool,
     pub sort: bool,
+    pub ignore_gitignore: bool,
 }
 
 pub enum TreeIndentType {

@@ -6,21 +6,25 @@ use colored::Colorize;
 use crate::config::TreeConfig;
 use crate::config::TreeIndentType;
 use crate::error::TreeError;
+use crate::filter::GitignoreFilter;
+use crate::filter::filter_entries_by_config;
 
 struct TreeTraversalState<'a> {
     indent_symbols: Vec<&'static str>,
     is_last_item: bool,
     current_depth: usize,
     config: &'a TreeConfig,
+    gitignore_filter: Option<&'a GitignoreFilter>,
 }
 
 impl<'a> TreeTraversalState<'a> {
-    pub fn new(config: &'a TreeConfig) -> Self {
+    pub fn new(config: &'a TreeConfig, gitignore_filter: Option<&'a GitignoreFilter>) -> Self {
         Self {
             indent_symbols: Vec::new(),
             is_last_item: true,
             current_depth: 1,
             config,
+            gitignore_filter,
         }
     }
 
@@ -53,29 +57,6 @@ impl<'a> TreeTraversalState<'a> {
             print!("{}", i);
         }
     }
-}
-
-fn filter_entries(entries: Vec<DirEntry>, config: &TreeConfig) -> Result<Vec<DirEntry>, TreeError> {
-    let mut filtered = Vec::new();
-
-    for entry in entries {
-        if !config.show_hidden && entry.file_name().to_string_lossy().starts_with('.') {
-            continue;
-        }
-
-        if config.dirs_only
-            && !entry
-                .file_type()
-                .map_err(|e| TreeError::GetFileType(entry.path().display().to_string(), e))?
-                .is_dir()
-        {
-            continue;
-        }
-
-        filtered.push(entry);
-    }
-
-    Ok(filtered)
 }
 
 fn read_all_entries(path: &Path) -> Result<Vec<DirEntry>, TreeError> {
@@ -131,7 +112,7 @@ fn print_tree_recursive(path: &Path, state: &mut TreeTraversalState) -> Result<(
 
     let entries = read_all_entries(path)?;
 
-    let mut filtered = filter_entries(entries, state.config)?;
+    let mut filtered = filter_entries_by_config(entries, state.config, state.gitignore_filter)?;
 
     if state.config.sort {
         filtered.sort_by_key(|a| a.file_name());
@@ -149,5 +130,19 @@ fn print_tree_recursive(path: &Path, state: &mut TreeTraversalState) -> Result<(
 }
 
 pub fn print_tree_with_config(path: &Path, config: &TreeConfig) -> Result<(), TreeError> {
-    print_tree_recursive(path, &mut TreeTraversalState::new(config))
+    let gitignore_filter = if config.ignore_gitignore {
+        let gitignore_path = path.join(".gitignore");
+        if let Some(filter) = GitignoreFilter::build_from_gitignore(&gitignore_path)? {
+            Some(filter)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    print_tree_recursive(
+        path,
+        &mut TreeTraversalState::new(config, gitignore_filter.as_ref()),
+    )
 }

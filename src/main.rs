@@ -1,6 +1,7 @@
 mod app;
 mod config;
 mod error;
+mod filter;
 mod fmt;
 
 use std::process::exit;

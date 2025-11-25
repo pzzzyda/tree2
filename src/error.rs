@@ -11,4 +11,7 @@ pub enum TreeError {
 
     #[error("failed to get metadata of `{0}`: {1}")]
     GetMetadata(String, #[source] std::io::Error),
+
+    #[error("failed to read .gitignore file `{0}`: {1}")]
+    ReadGitignore(String, #[source] std::io::Error),
 }
