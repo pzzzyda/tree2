@@ -66,7 +66,7 @@ fn filter_entries(entries: Vec<DirEntry>, config: &TreeConfig) -> Result<Vec<Dir
         if config.dirs_only
             && !entry
                 .file_type()
-                .map_err(|e| TreeError::FailedToGetFileType(entry.path().display().to_string(), e))?
+                .map_err(|e| TreeError::GetFileType(entry.path().display().to_string(), e))?
                 .is_dir()
         {
             continue;
@@ -81,9 +81,9 @@ fn filter_entries(entries: Vec<DirEntry>, config: &TreeConfig) -> Result<Vec<Dir
 fn read_all_entries(path: &Path) -> Result<Vec<DirEntry>, TreeError> {
     let path_str = path.display().to_string();
     path.read_dir()
-        .map_err(|e| TreeError::FailedToReadDir(path_str.clone(), e))?
+        .map_err(|e| TreeError::ReadDir(path_str.clone(), e))?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| TreeError::FailedToReadDirEntry(path_str, e))
+        .map_err(|e| TreeError::ReadDirEntry(path_str, e))
 }
 
 fn print_path_name(path: &Path, state: &mut TreeTraversalState) -> Result<(), TreeError> {
@@ -97,7 +97,7 @@ fn print_path_name(path: &Path, state: &mut TreeTraversalState) -> Result<(), Tr
             println!("{}", name.to_string_lossy().cyan().bold());
         } else if path
             .metadata()
-            .map_err(|e| TreeError::FailedToGetMetadata(path.display().to_string(), e))?
+            .map_err(|e| TreeError::GetMetadata(path.display().to_string(), e))?
             .permissions()
             .readonly()
         {
@@ -113,10 +113,10 @@ fn print_path_name(path: &Path, state: &mut TreeTraversalState) -> Result<(), Tr
 }
 
 fn print_tree_recursive(path: &Path, state: &mut TreeTraversalState) -> Result<(), TreeError> {
-    if let Some(max_depth) = state.config.max_depth {
-        if state.current_depth > max_depth {
-            return Ok(());
-        }
+    if let Some(max_depth) = state.config.max_depth
+        && state.current_depth > max_depth
+    {
+        return Ok(());
     }
 
     print_path_name(path, state)?;
@@ -134,7 +134,7 @@ fn print_tree_recursive(path: &Path, state: &mut TreeTraversalState) -> Result<(
     let mut filtered = filter_entries(entries, state.config)?;
 
     if state.config.sort {
-        filtered.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+        filtered.sort_by_key(|a| a.file_name());
     }
 
     for (index, entry) in filtered.iter().enumerate() {
